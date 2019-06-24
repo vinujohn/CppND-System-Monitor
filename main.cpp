@@ -96,10 +96,19 @@ void printMain(SysInfo sys,ProcessContainer procs){
 int main( int   argc, char *argv[] )
 {
  //Object which contains list of current processes, Container for Process Class
-    ProcessContainer procs;
+    //ProcessContainer procs;
 // Object which containts relevant methods and attributes regarding system details
-    SysInfo sys;
-    //std::string s = writeToConsole(sys);
-    printMain(sys,procs);
+    //SysInfo sys;
+    ////std::string s = writeToConsole(sys);
+    //printMain(sys,procs);
+    //ProcessParser p;
+    
+    //cout << ProcessParser::getVmSize("849") << endl;
+    //cout << ProcessParser::getCpuPercent("849") << endl;
+    //cout << ProcessParser::getProcUpTime("849") << endl;
+    //cout << ProcessParser::getSysUpTime() << endl;
+    //cout << ProcessParser::getProcUser("639") << endl;
+    //cout << ProcessParser::getCmd("639") << endl;
+    cout << ProcessParser::getNumberOfCores() << endl;
     return 0;
 }

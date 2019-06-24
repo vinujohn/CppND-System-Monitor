@@ -24,6 +24,7 @@ using namespace std;
 class ProcessParser{
     private:
         std::ifstream stream;
+        static string getProcessStatusElem(string statusFieldName, int elemIndex, string pid);
     public:
         static string getCmd(string pid);
         static vector<string> getPidList();
@@ -44,33 +45,112 @@ class ProcessParser{
         static bool isPidExisting(string pid);
 };
 
+// Private members
+string ProcessParser::getProcessStatusElem(string statusFieldName, int elemIndex, string pid){    
+    auto lines = Util::getFileLines(Path::basePath() + pid + Path::statusPath());
+        
+    for(auto line : lines){
+        if(line.compare(0, statusFieldName.size(), statusFieldName) == 0){
+            return Util::getStringElements(line)[elemIndex];
+        }
+    }
+
+    throw runtime_error("Could not find process status element");
+}
+
+
+
 // TODO: Define all of the above functions below:
 string ProcessParser::getCmd(string pid){
-    return "";
+    return Util::getFileLines(Path::basePath() + pid + Path::cmdPath())[0];
 }
 
 vector<string> ProcessParser::getPidList(){
-    return vector<string>();
+    vector<string> ret;
+
+    DIR* dir;
+    if(!(dir = opendir("/proc"))){
+        throw runtime_error(strerror(errno));
+    }
+
+    while(dirent* dirp = readdir(dir)) {
+        if(dirp->d_type != DT_DIR){
+            continue;
+        }
+
+        if(all_of(dirp->d_name, dirp->d_name + std::strlen(dirp->d_name), [](char c) {return isdigit(c);})){
+            ret.push_back(dirp->d_name);
+        }
+    }
+
+    if(closedir(dir)){
+        throw runtime_error(strerror(errno));
+    }
+
+    return ret;
 }
 
 string ProcessParser::getVmSize(string pid){
-    return "";
+    string elemName = "VmData";
+    int elemIndex = 1;
+
+    auto val = getProcessStatusElem(elemName, elemIndex, pid);
+
+    return to_string(stof(val)/float(1024*1024));
 }
 
 string ProcessParser::getCpuPercent(string pid){
-    return "";
+        
+    auto lines = Util::getFileLines(Path::basePath() + pid + "/" + Path::statPath());
+    auto values = Util::getStringElements(lines[0]);
+
+    float utime = stof(ProcessParser::getProcUpTime(pid));
+    float stime = stof(values[14]); 
+    float cutime = stof(values[15]);
+    float cstime = stof(values[16]);
+    float starttime = stof(values[21]);
+    float uptime = ProcessParser::getSysUpTime();
+    float freq = sysconf(_SC_CLK_TCK);
+    float total_time = utime + stime + cutime + cstime;
+    float seconds = uptime - (starttime/freq);
+    
+    return to_string(100.0*((total_time/freq)/seconds));
 }
 
 long int ProcessParser::getSysUpTime() {
-    return 0;
+    
+    auto lines = Util::getFileLines(Path::basePath() + Path::upTimePath());
+    auto values = Util::getStringElements(lines[0]);
+       
+    return stoi(values[0]);
 }
 
 string ProcessParser::getProcUpTime(string pid){
-    return "";
+    
+    auto lines = Util::getFileLines(Path::basePath() + pid + "/" + Path::statPath());
+    auto values = Util::getStringElements(lines[0]);
+       
+    return to_string(float(stof(values[13])/sysconf(_SC_CLK_TCK)));
 }
 
 string ProcessParser::getProcUser(string pid){
-    return "";
+    string elemName = "Uid";
+    int elemIndex = 1;
+
+    auto val = getProcessStatusElem(elemName, elemIndex, pid);
+
+    ifstream stream;
+    Util::getStream("/etc/passwd", stream);
+    
+    auto token = "x:" + val;
+    string line;
+    while(getline(stream, line)){
+        if(line.find(token) != std::string::npos) {
+            return line.substr(0, line.find(":"));
+        }
+    }
+
+     throw runtime_error("Could not user name for process");
 }
 
 vector<string> ProcessParser::getSysCpuPercent(string coreNumber){
@@ -86,6 +166,13 @@ string ProcessParser::getSysKernelVersion(){
 }
 
 int ProcessParser::getNumberOfCores(){
+    string name = "cpu cores";
+    auto lines = Util::getFileLines(Path::basePath() + "cpuinfo");
+    for(auto line : lines){
+        if(line.compare(0, name.size(), name) == 0){
+            return stoi(Util::getStringElements(line)[3]);
+        }
+    }
     return 0;
 }
 
