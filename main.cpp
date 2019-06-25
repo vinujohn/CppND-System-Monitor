@@ -109,6 +109,8 @@ int main( int   argc, char *argv[] )
     //cout << ProcessParser::getSysUpTime() << endl;
     //cout << ProcessParser::getProcUser("639") << endl;
     //cout << ProcessParser::getCmd("639") << endl;
-    cout << ProcessParser::getNumberOfCores() << endl;
+    //cout << ProcessParser::getNumberOfCores() << endl;
+    //cout << ProcessParser::getSysCpuPercent("0")[1] << endl;
+    cout << ProcessParser::PrintCpuStats(ProcessParser::getSysCpuPercent("0"), ProcessParser::getSysCpuPercent("1")) << endl;
     return 0;
 }

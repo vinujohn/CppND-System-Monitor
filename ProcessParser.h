@@ -25,6 +25,8 @@ class ProcessParser{
     private:
         std::ifstream stream;
         static string getProcessStatusElem(string statusFieldName, int elemIndex, string pid);
+        static float getSysActiveCpuTime(vector<string> values);
+        static float getSysIdleCpuTime(vector<string> values);
     public:
         static string getCmd(string pid);
         static vector<string> getPidList();
@@ -153,8 +155,17 @@ string ProcessParser::getProcUser(string pid){
      throw runtime_error("Could not user name for process");
 }
 
-vector<string> ProcessParser::getSysCpuPercent(string coreNumber){
-    return vector<string>();
+vector<string> ProcessParser::getSysCpuPercent(string coreNumber) {
+    auto lines = Util::getFileLines(Path::basePath() + Path::statPath());
+
+    auto name = "cpu" + coreNumber;
+    for(auto line : lines){
+        if(line.compare(0, name.size(), name) == 0){
+            return Util::getStringElements(line);
+        }
+    }
+
+    throw runtime_error("Could not user name for process");
 }
 
 float ProcessParser::getSysRamPercent(){
@@ -193,9 +204,29 @@ string ProcessParser::getOSName(){
 }
 
 string ProcessParser::PrintCpuStats(vector<string> values1, vector<string> values2){
-    return "";
+    float activeTime = getSysActiveCpuTime(values2) - getSysActiveCpuTime(values1);
+    float idleTime = getSysIdleCpuTime(values2) - getSysIdleCpuTime(values1);
+    
+    return to_string(100.0*(activeTime / (activeTime + idleTime)));
 }
 
 bool ProcessParser::isPidExisting(string pid){
     return false;
+}
+
+float ProcessParser::getSysActiveCpuTime(vector<string> values){
+    return(
+        stof(values[S_USER]) +
+        stof(values[S_NICE]) +
+        stof(values[S_SYSTEM]) +
+        stof(values[S_IRQ]) +
+        stof(values[S_SOFTIRQ]) +
+        stof(values[S_STEAL]) +
+        stof(values[S_GUEST]) +
+        stof(values[S_GUEST_NICE])
+    );
+}
+
+float ProcessParser::getSysIdleCpuTime(vector<string> values){
+    return (stof(values[S_IDLE]) + stof(values[S_IOWAIT]));
 }
