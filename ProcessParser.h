@@ -287,6 +287,12 @@ string ProcessParser::PrintCpuStats(vector<string> values1, vector<string> value
 }
 
 bool ProcessParser::isPidExisting(string pid){
+    auto list = ProcessParser::getPidList();
+    for(auto pidFromList : list){
+        if (pidFromList == pid){
+            return true;
+        }
+    }
     return false;
 }
 
