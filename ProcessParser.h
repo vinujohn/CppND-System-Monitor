@@ -169,55 +169,44 @@ vector<string> ProcessParser::getSysCpuPercent(string coreNumber) {
 }
 
 float ProcessParser::getSysRamPercent(){
-    string line;
-    string name1 = "MemAvailable:";
-    string name2 = "MemFree:";
-    string name3 = "Buffers:";
+    
+    string strMemAvailable = "MemAvailable:";
+    string strMemFree = "MemFree:";
+    string strBuffers = "Buffers:";
 
-    string value;
-    int result;
-    ifstream stream = Util::getStream((Path::basePath() + Path::memInfoPath()));
+    auto lines = Util::getFileLines(Path::basePath() + Path::memInfoPath());
+    
     float total_mem = 0;
     float free_mem = 0;
     float buffers = 0;
-    while (std::getline(stream, line)) {
+    
+    for (auto line : lines){
         if (total_mem != 0 && free_mem != 0)
             break;
-        if (line.compare(0, name1.size(), name1) == 0) {
-            istringstream buf(line);
-            istream_iterator<string> beg(buf), end;
-            vector<string> values(beg, end);
-            total_mem = stof(values[1]);
+        if (line.compare(0, strMemAvailable.size(), strMemAvailable) == 0) {
+            total_mem = stof(Util::getStringElements(line)[1]);
         }
-        if (line.compare(0, name2.size(), name2) == 0) {
-            istringstream buf(line);
-            istream_iterator<string> beg(buf), end;
-            vector<string> values(beg, end);
-            free_mem = stof(values[1]);
+        if (line.compare(0, strMemFree.size(), strMemFree) == 0) {
+            free_mem = stof(Util::getStringElements(line)[1]);
         }
-        if (line.compare(0, name3.size(), name3) == 0) {
-            istringstream buf(line);
-            istream_iterator<string> beg(buf), end;
-            vector<string> values(beg, end);
-            buffers = stof(values[1]);
+        if (line.compare(0, strBuffers.size(), strBuffers) == 0) {
+            buffers = stof(Util::getStringElements(line)[1]);
         }
     }
-    //calculating usage:
+    
     return float(100.0*(1-(free_mem/(total_mem-buffers))));
 }
 
 string ProcessParser::getSysKernelVersion(){
-    string line;
     string name = "Linux version ";
-    ifstream stream = Util::getStream((Path::basePath() + Path::versionPath()));
-    while (std::getline(stream, line)) {
-        if (line.compare(0, name.size(),name) == 0) {
-            istringstream buf(line);
-            istream_iterator<string> beg(buf), end;
-            vector<string> values(beg, end);
-            return values[2];
+    
+    auto lines = Util::getFileLines(Path::basePath() + Path::versionPath());
+    for(auto line : lines){
+        if(line.compare(0, name.size(), name) == 0){
+            return Util::getStringElements(line)[2];
         }
     }
+    
     return "";
 }
 
@@ -233,75 +222,60 @@ int ProcessParser::getNumberOfCores(){
 }
 
 int ProcessParser::getTotalThreads(){
-    string line;
     int result = 0;
     string name = "Threads:";
-    vector<string>_list = ProcessParser::getPidList();
-    for (int i=0 ; i<_list.size();i++) {
-    string pid = _list[i];
-    //getting every process and reading their number of their threads
-    ifstream stream = Util::getStream((Path::basePath() + pid + Path::statusPath()));
-    while (std::getline(stream, line)) {
-        if (line.compare(0, name.size(), name) == 0) {
-            istringstream buf(line);
-            istream_iterator<string> beg(buf), end;
-            vector<string> values(beg, end);
-            result += stoi(values[1]);
-            break;
+    
+    vector<string> pid_list = ProcessParser::getPidList();
+    for (int i=0 ; i < pid_list.size(); i++) {
+        string pid = pid_list[i];
+        auto lines = Util::getFileLines(Path::basePath() + pid + Path::statusPath());
+        for(auto line : lines){
+            if(line.compare(0, name.size(), name) == 0){
+                auto tokens = Util::getStringElements(line);
+                result += stoi(tokens[1]);
+            }
         }
     }
+    
     return result;
 }
 
 int ProcessParser::getTotalNumberOfProcesses(){
-    string line;
-    int result = 0;
     string name = "processes";
-    ifstream stream = Util::getStream((Path::basePath() + Path::statPath()));
-    while (std::getline(stream, line)) {
-        if (line.compare(0, name.size(), name) == 0) {
-            istringstream buf(line);
-            istream_iterator<string> beg(buf), end;
-            vector<string> values(beg, end);
-            result += stoi(values[1]);
-            break;
+    auto lines = Util::getFileLines(Path::basePath() + Path::statPath());
+    for(auto line : lines){
+        if(line.compare(0, name.size(), name) == 0){
+            return stoi(Util::getStringElements(line)[1]);
         }
     }
-    return result;
+    return 0;
 }
 
 int ProcessParser::getNumberOfRunningProcesses(){
-    string line;
-    int result = 0;
     string name = "procs_running";
-    ifstream stream = Util::getStream((Path::basePath() + Path::statPath()));
-    while (std::getline(stream, line)) {
-        if (line.compare(0, name.size(), name) == 0) {
-            istringstream buf(line);
-            istream_iterator<string> beg(buf), end;
-            vector<string> values(beg, end);
-            result += stoi(values[1]);
-            break;
+    auto lines = Util::getFileLines(Path::basePath() + Path::statPath());
+    for(auto line : lines){
+        if(line.compare(0, name.size(), name) == 0){
+            return stoi(Util::getStringElements(line)[1]);
         }
     }
-    return result;
+    return 0;
 }
 
 string ProcessParser::getOSName(){
-    string line;
     string name = "PRETTY_NAME=";
-
-    ifstream stream = Util::getStream(("/etc/os-release"));
-
-    while (std::getline(stream, line)) {
-        if (line.compare(0, name.size(), name) == 0) {
-              std::size_t found = line.find("=");
-              found++;
-              string result = line.substr(found);
-              result.erase(std::remove(result.begin(), result.end(), '"'), result.end());
-              return result;
+    
+    auto lines = Util::getFileLines("/etc/os-release");
+    for(auto line : lines){
+        if(line.compare(0, name.size(), name) == 0){
+            std::size_t found = line.find("=");
+            found++;
+            string result = line.substr(found);
+            result.erase(std::remove(result.begin(), result.end(), '"'), result.end());
+            return result;
         }
     }
+
     return "";
 }
 

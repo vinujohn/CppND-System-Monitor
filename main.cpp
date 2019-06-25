@@ -111,6 +111,12 @@ int main( int   argc, char *argv[] )
     //cout << ProcessParser::getCmd("639") << endl;
     //cout << ProcessParser::getNumberOfCores() << endl;
     //cout << ProcessParser::getSysCpuPercent("0")[1] << endl;
-    cout << ProcessParser::PrintCpuStats(ProcessParser::getSysCpuPercent("0"), ProcessParser::getSysCpuPercent("1")) << endl;
+    //cout << ProcessParser::PrintCpuStats(ProcessParser::getSysCpuPercent("0"), ProcessParser::getSysCpuPercent("1")) << endl;
+    //cout << ProcessParser::getSysRamPercent() << endl;
+    //cout << ProcessParser::getSysKernelVersion() << endl;
+    //cout << ProcessParser::getOSName() << endl;
+    //cout << ProcessParser::getTotalThreads() << endl;
+    //cout << ProcessParser::getTotalNumberOfProcesses() << endl;
+    cout << ProcessParser::getNumberOfRunningProcesses() << endl;
     return 0;
 }
